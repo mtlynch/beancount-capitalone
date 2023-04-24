@@ -12,7 +12,8 @@ from beancount.ingest import importer
 
 _COLUMN_DATE = 'Posted Date'
 _COLUMN_PAYEE = 'Description'
-_COLUMN_AMOUNT = 'Debit'
+_COLUMN_DEBIT_AMOUNT = 'Debit'
+_COLUMN_CREDIT_AMOUNT = 'Credit'
 
 _FILENAME_PATTERN = re.compile(r'\d{4}-\d{2}-\d{2}_transaction_download.csv')
 
@@ -71,8 +72,12 @@ class CreditImporter(importer.ImporterProtocol):
         payee = row[_COLUMN_PAYEE]
         transaction_description = titlecase.titlecase(payee)
 
-        if row[_COLUMN_AMOUNT]:
-            transaction_amount = self._parse_amount(row[_COLUMN_AMOUNT])
+        if row[_COLUMN_DEBIT_AMOUNT]:
+            transaction_amount = self._parse_amount(row[_COLUMN_DEBIT_AMOUNT])
+        elif row[_COLUMN_CREDIT_AMOUNT]:
+            # Negate the credit column so that it has opposite sign from debits.
+            negated_credit_amount = '-' + row[_COLUMN_CREDIT_AMOUNT]
+            transaction_amount = self._parse_amount(negated_credit_amount)
         else:
             return None  # 0 dollar transaction
 
