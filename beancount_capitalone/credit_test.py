@@ -70,3 +70,22 @@ def test_extracts_spend_with_matching_transaction(tmp_path):
           Liabilities:Credit-Cards:CapitalOne  -528.55 USD
           Expenses:Cloud-Services:Shopify       528.55 USD
         """.rstrip()) == _stringify_directives(directives).strip()
+
+
+def test_extracts_cashback(tmp_path):
+    capitalone_file = tmp_path / '2023-03-10_transaction_download.csv'
+    capitalone_file.write_text(
+        _unindent("""
+            Transaction Date,Posted Date,Card No.,Description,Category,Debit,Credit
+            2023-03-03,2023-03-03,1234,CREDIT-CASH BACK REWARD,Payment/Credit,,32.42
+            """))
+
+    with capitalone_file.open() as f:
+        directives = CreditImporter(
+            account='Income:Credit-Card-Rewards:CapitalOne-Rewards',
+            lastfour='1234').extract(f)
+
+    assert _unindent("""
+        2023-03-03 * "Credit-Cash Back Reward"
+          Income:Credit-Card-Rewards:CapitalOne-Rewards  32.42 USD
+        """.rstrip()) == _stringify_directives(directives).strip()
